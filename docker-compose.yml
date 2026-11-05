@@ -15,6 +15,16 @@ services:
     depends_on:
       - kafka
 
+  rule-engine:
+    build: ./rule-engine
+    container_name: siem-rule-engine
+    restart: unless-stopped
+    depends_on:
+      - kafka
+      - normalizer
+    environment:
+      KAFKA_SERVER: kafka:29092
+
   kafka:
     image: apache/kafka:4.3.1
     container_name: siem-kafka
