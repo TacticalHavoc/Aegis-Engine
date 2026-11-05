@@ -1,0 +1,20 @@
+filebeat.inputs:
+  - type: filestream
+    id: linux-system-logs
+    enabled: true
+    paths:
+      - /var/log/auth.log
+      - /var/log/syslog
+    fields:
+      log_source: linux
+      environment: siem-lab
+    fields_under_root: true
+
+output.kafka:
+  hosts:
+    - "CENTRAL_SERVER_IP:9092"
+  topic: "siem.raw"
+  codec.json:
+    pretty: false
+  required_acks: 1
+  compression: gzip
