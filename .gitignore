@@ -6,3 +6,21 @@ venv/
 
 # Local backups
 *~
+
+# Environment secrets
+.env
+.env.*
+!.env.example
+
+# Python environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.env
+*.bak
+
+# Python generated files
+__pycache__/
+*.py[cod]

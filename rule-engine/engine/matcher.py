@@ -1,3 +1,4 @@
+import ipaddress
 import fnmatch
 import re
 
@@ -100,6 +101,24 @@ def evaluate_selection(event, selection):
                 check(value, pattern)
                 for value in actual_values
                 for pattern in expected_values
+            )
+
+        elif modifier == "cidr":
+            expected_values = expected if isinstance(expected, list) else [expected]
+            actual_values = list(scalar_values(actual))
+
+            def in_network(value, network):
+                try:
+                    return ipaddress.ip_address(str(value).strip()) in ipaddress.ip_network(
+                        str(network).strip(), strict=False
+                    )
+                except ValueError:
+                    return False
+
+            matched = any(
+                in_network(value, network)
+                for value in actual_values
+                for network in expected_values
             )
 
         elif modifier == "all":

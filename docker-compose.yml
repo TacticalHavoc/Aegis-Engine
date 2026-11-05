@@ -1,4 +1,13 @@
 services:
+  agentic-soc:
+    build: ./agentic-soc
+    container_name: aegis-agentic-soc
+    restart: unless-stopped
+    expose:
+      - "8000"
+    environment:
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      AGENT_MODEL: ${AGENT_MODEL:-gemini-3.5-flash-lite}
   dashboard:
     build: ./dashboard
     container_name: siem-dashboard
@@ -7,7 +16,7 @@ services:
       - kafka
       - normalizer
     ports:
-      - "8501:8501"
+      - "8501:80"
   normalizer:
     build: ./normalizer
     container_name: siem-normalizer
@@ -24,7 +33,20 @@ services:
       - normalizer
     environment:
       KAFKA_SERVER: kafka:29092
-
+  backend:
+    build: ./backend
+    container_name: aegis-backend
+    restart: unless-stopped
+    depends_on:
+      - kafka
+      - normalizer
+      - rule-engine
+      - agentic-soc
+    ports:
+      - "8001:8001"
+    environment:
+      KAFKA_SERVER: kafka:29092
+      AGENTIC_SOC_URL: http://agentic-soc:8000
   kafka:
     image: apache/kafka:4.3.1
     container_name: siem-kafka

